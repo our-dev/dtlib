@@ -1,0 +1,14 @@
+# python package requirements
+
+
+#GitPython == 0.3.3
+#logging == 0.4.9.6
+
+# make url requests easier
+requests >= 2.2.1
+
+#qrcode
+#qrcode == 5.1
+
+#jenkins-api
+#python-jenkins==0.4.12
