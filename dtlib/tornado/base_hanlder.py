@@ -323,11 +323,11 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         区别：加入了 平台的描述
         创建 或者 刷新 token,
         包括各种 ttl_token
-
+    
         现在是进行了扩展了,所以用这种方式,
-
+    
         - 允许有匿名的存在
-
+    
         :type self:MyBaseHandler
         :type cls:UserToken
         :type user:User
@@ -343,29 +343,29 @@ class MyUserBaseHandler(MyOriginBaseHandler):
 
         if list_have_none_mem(*[client_type]):
             return None
-
-        my_token = await cls.objects.get(user=user, c_type=client_type.value)
+        # 读取 mongodb，获取用户对应的 token，单点登录情况下使用
+        # my_token = await cls.objects.get(user=user, c_type=client_type.value)
         """:type:WebToken"""
 
         ip = self.request.remote_ip
         user_agent = self.request.headers['User-Agent']
         finger_prt = hashlib.md5(user_agent.encode("utf-8")).hexdigest()
 
-        if my_token is None:  # 如果为空,是新建一个
-            my_token = cls(
-                c_type=client_type.value,
-                c_name=client_type.key,
-            )
-            """:type:UserToken"""
+        # if my_token is None:  # 单点登录情况下使用
+        my_token = cls(
+            c_type=client_type.value,
+            c_name=client_type.key,
+        )
+        """:type:UserToken"""
 
-            if user is not None:
-                my_token.user = user.get_id()
-                my_token.u_name = user.nickname
+        if user is not None:
+            my_token.user = user.get_id()
+            my_token.u_name = user.nickname
 
-            # 允许有匿名用户的存在,这个时候就表明没有被签名的匿名登录
-            my_token.set_default_rc_tag()
+        # 允许有匿名用户的存在,这个时候就表明没有被签名的匿名登录
+        my_token.set_default_rc_tag()
 
-        my_token.set_uuid_rand_token()  # 单点登录，将旧的token给弃用掉
+        my_token.set_uuid_rand_token()      # 多点登录，无论是否存在 token 都新生成 token
         my_token.last_use_time = get_current_utc_time()
         my_token.ip = ip
         my_token.user_agent = user_agent
