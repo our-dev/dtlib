@@ -99,7 +99,7 @@ def token_required(is_async=True):
         :return:
         """
 
-        @api_counts()
+        # @api_counts()
         @functools.wraps(method)
         async def wrapper(self, *args, **kwargs):
             """

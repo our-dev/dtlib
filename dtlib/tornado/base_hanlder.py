@@ -12,6 +12,10 @@ from dtlib.utils import list_have_none_mem
 from dtlib.web.constcls import QrAuthStatusCode
 from dtlib.web.valuedict import ClientTypeDict, OperationDict
 
+from dtlib.tornado.utils import set_default_rc_tag
+from dtlib import randtool
+from bson import ObjectId
+
 
 class SessionKey(object):
     """
@@ -221,8 +225,15 @@ class MyOriginBaseHandler(RequestHandler):
         """
         log_session = self.cache_session
 
+        mongo_conn = self.get_async_mongo()
+        token_col = mongo_conn['ttl_access_token']
+
+        token_res = await token_col.find_one(log_session)
+        # if token_res:
+        #     print("1", token_res)
+
         if log_session is not None:
-            await log_session.delete()
+            await token_col.remove(log_session)
 
     async def get_organization(self):
         """
@@ -261,14 +272,20 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         if token is None:
             return None
 
-        log_session = await AccessToken.objects.get(token=token)
-        """:type:AccessToken"""
+        mongo_conn = self.get_async_mongo()
+        # todo: extract collection name
+        token_col = mongo_conn['ttl_access_token']
+
+        log_session = await token_col.find_one({'token': token, 'is_del': False})
+
+        # log_session = await AccessToken.objects.get(token=token)
+        # """:type:AccessToken"""
 
         if log_session is None:
             return None
 
         # 在此处直接赋值存储session,一些临时变量在此处缓存
-        self.token = log_session.token  # 本次请求都会用到token,相当于会话标识
+        self.token = token  # 本次请求都会用到token,相当于会话标识
         self.cache_session = log_session
 
         self.set_cookie('token', self.token)
@@ -281,7 +298,7 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         :return:
         :rtype:User
         """
-        user = self.cache_session.user
+        user = self.cache_session['user']
         return user
 
     async def get_organization(self):
@@ -292,33 +309,42 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         """
         # user_id = await self.get_user_id()
         # user = await User.objects.get(user_id=user_id)
-        user = self.cache_session.user
+        user = self.cache_session['user']
+        #
+        # if user is None:
+        #     return None
 
-        if user is None:
-            return None
+        db = self.get_async_mongo()
+        rel_col = db.user_org_rel
+        #todo: is_del?
+        current_rels = await rel_col.find_one({
+            'user': ObjectId(user),
+            'is_current': True,
+            'is_active': True
+        })
 
-        current_rels = await UserOrgRelation.objects.filter(user=user, is_current=True, is_active=True).find_all()
-        """:type:list[UserOrgRelation]"""
+        # current_rels = await UserOrgRelation.objects.filter(user=user, is_current=True, is_active=True).find_all()
+        # """:type:list[UserOrgRelation]"""
 
         if current_rels is None:
             return None
 
-        len_rels = len(current_rels)
-        if len_rels == 0:
-            msg = 'Exception:no active or current orgnizations,please contact the admin'
-            print(msg)
-            return None
+        # len_rels = len(current_rels)
+        # if len_rels == 0:
+        #     msg = 'Exception:no active or current orgnizations,please contact the admin'
+        #     print(msg)
+        #     return None
+        #
+        # if len_rels > 1:
+        #     msg = 'Exception:more than one current data,please contact the admin'
+        #     print(msg)
+        #     return None
+        #
+        # current_rels = current_rels[0]
 
-        if len_rels > 1:
-            msg = 'Exception:more than one current data,please contact the admin'
-            print(msg)
-            return None
+        return current_rels['organization']
 
-        current_rels = current_rels[0]
-
-        return current_rels.organization
-
-    async def create_token_session(self, user, cls, **kwargs):
+    async def create_token_session(self, user, **kwargs):
         """
         区别：加入了 平台的描述
         创建 或者 刷新 token,
@@ -351,31 +377,46 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         user_agent = self.request.headers['User-Agent']
         finger_prt = hashlib.md5(user_agent.encode("utf-8")).hexdigest()
 
-        # if my_token is None:  # 单点登录情况下使用
-        my_token = cls(
-            c_type=client_type.value,
-            c_name=client_type.key,
-        )
-        """:type:UserToken"""
+        # # if my_token is None:  # 单点登录情况下使用
+        # my_token = cls(
+        #     c_type=client_type.value,
+        #     c_name=client_type.key,
+        # )
+        # """:type:UserToken"""
 
-        if user is not None:
-            my_token.user = user.get_id()
-            my_token.u_name = user.nickname
+        db = self.get_async_mongo()
+        token_col = db['ttl_access_token']
+        user_col = db['g_users']
+
+        user_res = await user_col.find_one({'_id': user})
+
+        if not user_res:
+            return None
+        new_token = dict(
+            user=user_res['_id'],
+            # todo: save user_id
+            u_name=user_res['nickname']
+        )
+
+        # if user is not None:
+        #     my_token.user = user.get_id()
+        #     my_token.u_name = user.nickname
 
         # 允许有匿名用户的存在,这个时候就表明没有被签名的匿名登录
-        my_token.set_default_rc_tag()
+        new_token = set_default_rc_tag(new_token)
+        new_token['token'] = randtool.generate_uuid_token()
+        new_token['last_use_time'] = get_current_utc_time()
+        new_token['ip'] = ip
+        new_token['user_agent'] = user_agent
+        new_token['finger_prt'] = finger_prt
+        # my_token = await my_token.save()  # 通过save获取的my_token并没有lazy出来，后面赋值的时候会有影响
+        # """:type:UserToken"""
+        #
+        # my_token = await cls.objects.get(id=my_token.get_id())  # 相当于使用了 loadReference功能
 
-        my_token.set_uuid_rand_token()      # 多点登录，无论是否存在 token 都新生成 token
-        my_token.last_use_time = get_current_utc_time()
-        my_token.ip = ip
-        my_token.user_agent = user_agent
-        my_token.finger_prt = finger_prt
-        my_token = await my_token.save()  # 通过save获取的my_token并没有lazy出来，后面赋值的时候会有影响
-        """:type:UserToken"""
+        await token_col.insert(new_token)
 
-        my_token = await cls.objects.get(id=my_token.get_id())  # 相当于使用了 loadReference功能
-
-        return my_token
+        return new_token
 
     async def create_anonymous_token(self, cls, **kwargs):
         """
@@ -484,14 +525,17 @@ class MyAppBaseHandler(MyOriginBaseHandler):
         if token is None:
             return None
 
-        app_session = await AppSession.objects.get(token=token)  # 使用token来表明是同一会话
+        db = self.get_async_mongo()
+        session_col = db.ttl_app_session
+
+        app_session = await session_col.find_one({'token': token})  # 使用token来表明是同一会话
         """:type:AppSession"""
 
         if app_session is None:
             return None
 
         # 在此处直接赋值存储session,一些临时变量在此处缓存
-        self.token = app_session.token  # 本次请求都会用到token,相当于会话标识
+        self.token = app_session['token']  # 本次请求都会用到token,相当于会话标识
         self.cache_session = app_session
 
         self.set_cookie('token', self.token)
@@ -506,36 +550,40 @@ class MyAppBaseHandler(MyOriginBaseHandler):
         client_type = kwargs.get('client_type', ClientTypeDict.api)
         ip = self.request.remote_ip
 
-        test_app = await TestDataApp.objects.get(app_id=app_id)
-        """:type:TestDataApp"""
+        db = self.get_async_mongo()
+        app_col = db.test_data_app
+        session_col = db.ttl_app_session
 
-        app_session = await AppSession.objects.get(app_id=app_id)
-        """:type:AppSession"""
+        test_app = await app_col.find_one({'app_id': app_id})
+
+        app_session = await session_col.find_one({'app_id': app_id})
 
         if app_session is not None:
             # 如果已经存在,则只需要更新时间
-            app_session.last_use_time = get_current_utc_time()  # 更新在线时间
-            app_session = await app_session.save()
+            current_time = get_current_utc_time()
+            await session_col.update({'app_id': app_id},
+                                     {'$set': {'last_use_time': current_time}})
+            # app_session.last_use_time = get_current_utc_time()  # 更新在线时间
+            # app_session = await app_session.save()
+            app_session['last_use_time'] = current_time
             return app_session
 
         # 如果不存在登录状态记录,则重新创建session
-        app_session = AppSession(
+        new_session = dict(
             app_id=app_id,
             c_type=client_type.value,
             c_name=client_type.key,
-            organization=test_app.organization,
-            o_name=test_app.o_name,
-            ip=ip
+            organization=test_app['organization'],
+            o_name=test_app['o_name'],
+            ip=ip,
+            token=randtool.generate_uuid_token(),
+            last_use_time=get_current_utc_time()
         )
-        app_session.set_uuid_rand_token()
-        app_session.last_use_time = get_current_utc_time()
-        app_session.set_http_tag(http_req=self)
-        app_session.set_default_rc_tag()
-        app_session = await app_session.save()
-
-        self.cache_session = app_session
-
-        return app_session
+        new_session.update(self.set_http_tag())
+        new_session = set_default_rc_tag(new_session)
+        await session_col.insert(new_session)
+        self.cache_session = new_session
+        return new_session
 
     async def get_app(self):
         """
@@ -555,11 +603,22 @@ class MyAppBaseHandler(MyOriginBaseHandler):
         """
 
         try:
-            if type(self.cache_session.organization) is Organization:
-                # 未加载前直接访问，会有异常
-                organization = self.cache_session.organization
+            organization = self.cache_session['organization']
         except:
             res = await self.cache_session.load_references(fields=['organization', ])
             # 一旦加载完成后，此值就一直保存在session中
             organization = res['loaded_values']['organization']
         return organization
+
+    def set_http_tag(self):
+        """
+        设置http的标记
+        :return:
+        """
+        new_tag = dict(
+            ip = self.request.remote_ip,  # 客户端访问的IP
+            user_agent = self.request.headers.get('User-Agent', None),
+            cookie = self.request.headers.get('Cookie', None),
+            referrer = self.request.headers.get('Referer', None)
+        )
+        return new_tag

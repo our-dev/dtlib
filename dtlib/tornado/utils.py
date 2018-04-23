@@ -163,6 +163,17 @@ def output_sys_info():
     os.system('ifconfig|grep addr')
 
 
+def set_default_rc_tag(dictionary):
+    """
+    设置默认的数据记录标记，utc0时区
+    """
+    now_time = datetime.datetime.utcnow()  # 只要是涉及到mongodb中的时间储存全部都用utc时间
+    dictionary['rc_time'] = now_time
+    dictionary['is_del'] = False
+    dictionary['del_time'] = None
+    return dictionary
+
+
 class MyTest(unittest.TestCase):
     def test_output_sys_info(self):
         output_sys_info()
