@@ -4,10 +4,10 @@ import json
 from tornado.web import RequestHandler
 
 from dtlib.timetool import get_current_utc_time
-from dtlib.tornado.account_docs import UserOrgRelation, Organization
+# from dtlib.tornado.account_docs import UserOrgRelation, Organization
 from dtlib.tornado.const_data import FieldDict
-from dtlib.tornado.docs import TestDataApp, LogHistory
-from dtlib.tornado.ttl_docs import AppSession, AccessToken
+# from dtlib.tornado.docs import TestDataApp, LogHistory
+# from dtlib.tornado.ttl_docs import AppSession, AccessToken
 from dtlib.utils import list_have_none_mem
 from dtlib.web.constcls import QrAuthStatusCode
 from dtlib.web.valuedict import ClientTypeDict, OperationDict
@@ -463,39 +463,39 @@ class MyUserBaseHandler(MyOriginBaseHandler):
 
         return my_token
 
-    async def save_login_history(self, **kwargs):
-        """
-        保留登录记录
-        :return:
-        """
-        # 登录记录里面增加一条记录
-        # login_history = LoginHistory()
-
-        client_type = kwargs.get('client_type')
-        """:type:ValueDict"""
-        if list_have_none_mem(*[client_type]):
-            return None
-
-        log_history = LogHistory()
-        await log_history.save_status(
-            http_req=self,
-            client_type=client_type,
-            operation=OperationDict.login)
-
-    async def save_logout_history(self, **kwargs):
-        """
-        保留登录记录
-        :return:
-        """
-        client_type = kwargs.get('client_type')
-        """:type:ValueDict"""
-        if list_have_none_mem(*[client_type]):
-            return None
-        log_history = LogHistory()
-        await log_history.save_status(
-            http_req=self,
-            client_type=client_type,
-            operation=OperationDict.logout)
+    # async def save_login_history(self, **kwargs):
+    #     """
+    #     保留登录记录
+    #     :return:
+    #     """
+    #     # 登录记录里面增加一条记录
+    #     # login_history = LoginHistory()
+    #
+    #     client_type = kwargs.get('client_type')
+    #     """:type:ValueDict"""
+    #     if list_have_none_mem(*[client_type]):
+    #         return None
+    #
+    #     log_history = LogHistory()
+    #     await log_history.save_status(
+    #         http_req=self,
+    #         client_type=client_type,
+    #         operation=OperationDict.login)
+    #
+    # async def save_logout_history(self, **kwargs):
+    #     """
+    #     保留登录记录
+    #     :return:
+    #     """
+    #     client_type = kwargs.get('client_type')
+    #     """:type:ValueDict"""
+    #     if list_have_none_mem(*[client_type]):
+    #         return None
+    #     log_history = LogHistory()
+    #     await log_history.save_status(
+    #         http_req=self,
+    #         client_type=client_type,
+    #         operation=OperationDict.logout)
 
 
 class MyAppBaseHandler(MyOriginBaseHandler):
@@ -585,16 +585,16 @@ class MyAppBaseHandler(MyOriginBaseHandler):
         self.cache_session = new_session
         return new_session
 
-    async def get_app(self):
-        """
-        获取测试数据应用,根据当前session
-        :return:
-        """
-        app_session = self.cache_session
-        test_web_app = await TestDataApp.objects.get(app_id=app_session.app_id)
-        if test_web_app is None:
-            return None
-        return test_web_app
+    # async def get_app(self):
+    #     """
+    #     获取测试数据应用,根据当前session
+    #     :return:
+    #     """
+    #     app_session = self.cache_session
+    #     test_web_app = await TestDataApp.objects.get(app_id=app_session.app_id)
+    #     if test_web_app is None:
+    #         return None
+    #     return test_web_app
 
     async def get_organization(self):
         """
