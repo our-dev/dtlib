@@ -22,6 +22,7 @@ def my_jsonp(method):
 
     return wrapper
 
+
 def deco_jsonp(is_async=True):
     """
     针对全网的接口的使用量的统计
