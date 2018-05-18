@@ -4,7 +4,8 @@ import os
 import traceback
 
 # from dtlib.tornado.ttl_docs import AccessToken
-# from dtlib.tornado.utils import save_api_counts, save_user_api_counts, save_app_api_counts
+from dtlib.tornado.utils import save_api_counts
+#, save_user_api_counts, save_app_api_counts
 from dtlib.web.constcls import ConstData
 from dtlib.web.tools import get_jsonp_res
 
@@ -28,35 +29,35 @@ def allow_cors_post(method):
     return wrapper
 
 
-# def api_counts(is_async=True):
-#     """
-#     针对全网的接口的使用量的统计
-#     :param is_async:
-#     :return:
-#     """
-#
-#     def _api_counts(method):
-#         """
-#         带参数，综合了同步和异步的装饰器，必须带参数
-#         :param method:
-#         :return:
-#         """
-#
-#         @functools.wraps(method)
-#         async def wrapper(self, *args, **kwargs):
-#             """
-#             :type self MyBaseHandler
-#             """
-#             if is_async:
-#                 await method(self, *args, **kwargs)
-#             else:
-#                 method(self, *args, **kwargs)
-#
-#             await save_api_counts(self)
-#
-#         return wrapper
-#
-#     return _api_counts
+def api_counts(is_async=True):
+    """
+    针对全网的接口的使用量的统计
+    :param is_async:
+    :return:
+    """
+
+    def _api_counts(method):
+        """
+        带参数，综合了同步和异步的装饰器，必须带参数
+        :param method:
+        :return:
+        """
+
+        @functools.wraps(method)
+        async def wrapper(self, *args, **kwargs):
+            """
+            :type self MyBaseHandler
+            """
+            if is_async:
+                await method(self, *args, **kwargs)
+            else:
+                method(self, *args, **kwargs)
+
+            await save_api_counts(self)
+
+        return wrapper
+
+    return _api_counts
 
 
 def test_token_required(is_async=True, test_token='1234'):
@@ -99,7 +100,7 @@ def token_required(is_async=True):
         :return:
         """
 
-        # @api_counts()
+        @api_counts()
         @functools.wraps(method)
         async def wrapper(self, *args, **kwargs):
             """

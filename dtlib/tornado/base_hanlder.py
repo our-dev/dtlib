@@ -29,25 +29,6 @@ class SessionKey(object):
     """登录状态"""
 
 
-# class MyBaseHandler(RequestHandler):
-#     """
-#     自定义session的类,基于tornado的
-#     """
-#
-#     def set_session(self):
-#         # TODO
-#         pass
-#
-#     def get_redis(self):
-#         """
-#         获取redis的连接池
-#         :return:
-#         """
-#         rc_pool = self.settings.get('rc_pool', None)
-#         assert rc_pool is not None
-#         return rc_pool
-
-
 class BaseHandler(RequestHandler):
     """自定义的基类,基于torndsession的,因为没有redis的异步库,所以比较有限
 
@@ -316,7 +297,7 @@ class MyUserBaseHandler(MyOriginBaseHandler):
 
         db = self.get_async_mongo()
         rel_col = db.user_org_rel
-        #todo: is_del?
+        # todo: is_del?
         current_rels = await rel_col.find_one({
             'user': ObjectId(user),
             'is_current': True,
@@ -463,39 +444,52 @@ class MyUserBaseHandler(MyOriginBaseHandler):
 
         return my_token
 
-    # async def save_login_history(self, **kwargs):
-    #     """
-    #     保留登录记录
-    #     :return:
-    #     """
-    #     # 登录记录里面增加一条记录
-    #     # login_history = LoginHistory()
-    #
-    #     client_type = kwargs.get('client_type')
-    #     """:type:ValueDict"""
-    #     if list_have_none_mem(*[client_type]):
-    #         return None
-    #
-    #     log_history = LogHistory()
-    #     await log_history.save_status(
-    #         http_req=self,
-    #         client_type=client_type,
-    #         operation=OperationDict.login)
-    #
-    # async def save_logout_history(self, **kwargs):
-    #     """
-    #     保留登录记录
-    #     :return:
-    #     """
-    #     client_type = kwargs.get('client_type')
-    #     """:type:ValueDict"""
-    #     if list_have_none_mem(*[client_type]):
-    #         return None
-    #     log_history = LogHistory()
-    #     await log_history.save_status(
-    #         http_req=self,
-    #         client_type=client_type,
-    #         operation=OperationDict.logout)
+    def set_http_tag(self):
+        """
+        设置http的标记
+        :return:
+        """
+        new_tag = dict(
+            ip=self.request.remote_ip,  # 客户端访问的IP
+            user_agent=self.request.headers.get('User-Agent', None),
+            cookie=self.request.headers.get('Cookie', None),
+            referrer=self.request.headers.get('Referer', None)
+        )
+        return new_tag
+
+        # async def save_login_history(self, **kwargs):
+        #     """
+        #     保留登录记录
+        #     :return:
+        #     """
+        #     # 登录记录里面增加一条记录
+        #     # login_history = LoginHistory()
+        #
+        #     client_type = kwargs.get('client_type')
+        #     """:type:ValueDict"""
+        #     if list_have_none_mem(*[client_type]):
+        #         return None
+        #
+        #     log_history = LogHistory()
+        #     await log_history.save_status(
+        #         http_req=self,
+        #         client_type=client_type,
+        #         operation=OperationDict.login)
+        #
+        # async def save_logout_history(self, **kwargs):
+        #     """
+        #     保留登录记录
+        #     :return:
+        #     """
+        #     client_type = kwargs.get('client_type')
+        #     """:type:ValueDict"""
+        #     if list_have_none_mem(*[client_type]):
+        #         return None
+        #     log_history = LogHistory()
+        #     await log_history.save_status(
+        #         http_req=self,
+        #         client_type=client_type,
+        #         operation=OperationDict.logout)
 
 
 class MyAppBaseHandler(MyOriginBaseHandler):
@@ -616,9 +610,41 @@ class MyAppBaseHandler(MyOriginBaseHandler):
         :return:
         """
         new_tag = dict(
-            ip = self.request.remote_ip,  # 客户端访问的IP
-            user_agent = self.request.headers.get('User-Agent', None),
-            cookie = self.request.headers.get('Cookie', None),
-            referrer = self.request.headers.get('Referer', None)
+            ip=self.request.remote_ip,  # 客户端访问的IP
+            user_agent=self.request.headers.get('User-Agent', None),
+            cookie=self.request.headers.get('Cookie', None),
+            referrer=self.request.headers.get('Referer', None)
         )
         return new_tag
+
+#
+#
+# class MyBaseHandler(MyUserBaseHandler):
+#     """
+#     自定义session的类,基于tornado的
+#
+#     - logsession是登录的token,使用mongodb来存储
+#     - sessionid使用redis来存储,以后用token,不用session了
+#
+#     """
+#
+#     def __init__(self, *args, **kwargs):
+#         super(MyBaseHandler, self).__init__(*args, **kwargs)
+#         # self.set_header('Access-Control-Allow-Origin', '*')
+#         # self.set_header('Access-Control-Allow-Headers',
+#         #                 'Origin, X-Requested-With, Content-type, Accept, connection, User-Agent, Cookie')
+#         # self.set_header('Access-Control-Allow-Methods',
+#         #                 'POST, GET, OPTIONS')
+#
+#     def set_http_tag(self):
+#         """
+#         设置http的标记
+#         :return:
+#         """
+#         new_tag = dict(
+#             ip=self.request.remote_ip,  # 客户端访问的IP
+#             user_agent=self.request.headers.get('User-Agent', None),
+#             cookie=self.request.headers.get('Cookie', None),
+#             referrer=self.request.headers.get('Referer', None)
+#         )
+#         return new_tag
