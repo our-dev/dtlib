@@ -226,7 +226,7 @@ async def get_org_data_paginator(self, *args, **kwargs):
 
     col_name = kwargs.get('col_name', None)
     pro_id = kwargs.get('pro_id', None)
-    tag = kwargs.get('tag', 'default')  # 需要隐藏的字段,一个dict
+    tag = kwargs.get('tag', [])  # 需要展示的dict
     hide_fields = kwargs.get('hide_fields', None)  # 需要隐藏的字段,一个dict
     """:type:dict"""
 
@@ -252,17 +252,18 @@ async def get_org_data_paginator(self, *args, **kwargs):
     # if pro_id is None:
     if pro_id:
         find_condition['pro_id'] = ObjectId(str(pro_id))
-        if tag == 'default':
-            pro_col = mongo_coon.test_project
-            pro_res = await pro_col.find_one({'_id': ObjectId(str(pro_id))})
-            if 'tags' in pro_res.keys():
-                first_tag = pro_res['tags'][0]
-                find_condition['tag'] = first_tag
-            else:
+        if tag != []:
+            if isinstance(tag, list) is False:
+                return ConstData.msg_args_wrong
+            tag_condition = {
+                '$in': tag
+            }
+            if 'default' in tag:
                 # todo: remove the next release
-                find_condition['$or'] = [{'tag': 'default'}, {'tag': {'$exists': False}}]
-        else:
-            find_condition['tag'] = tag
+                find_condition['$or'] = [{'tag': tag_condition}, {'tag': {'$exists': False}}]
+            else:
+                find_condition['tag'] = tag_condition
+
     msg_details = mycol.find(find_condition, hide_fields).sort([('rc_time', DESCENDING)])  # 升序排列
     msg_details_cnt = await msg_details.count()
     msg_details = msg_details.skip(page_size * (page_idx - 1)).limit(page_size)  # 进行分页
