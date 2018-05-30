@@ -84,7 +84,7 @@ def my_async_paginator(method):
 
         page_data_json_list = []
         for item in page_data:
-            page_data_json_list.append(item.to_dict())
+            page_data_json_list.append(item)
 
         res_dict = dict(
             page_total_cnts=page_total_cnts,
