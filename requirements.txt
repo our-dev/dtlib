@@ -1,6 +1,7 @@
 # python package requirements
 
-
+pymongo==2.8
+tornado==4.3
 #GitPython == 0.3.3
 #logging == 0.4.9.6
 
@@ -12,5 +13,4 @@ requests == 2.18.4
 
 #jenkins-api
 #python-jenkins==0.4.12
-tornado>=4.3
 tabulate==0.8.2

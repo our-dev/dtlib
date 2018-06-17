@@ -1,12 +1,10 @@
 # coding:utf-8
+import binascii
+# from hashlib import md5
+import hashlib
 import os
 import random
 import string
-
-import requests
-# from hashlib import md5
-import hashlib
-import binascii
 
 __author__ = 'zheng'
 
