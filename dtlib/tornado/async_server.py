@@ -11,6 +11,7 @@ from tornado.tcpserver import TCPServer
 class MyAsyncHttpServer(HTTPServer):
     """
     asyncio ioloop
+    deprecated tornado 5.0.3
     """
 
     def add_sockets(self, sockets):
