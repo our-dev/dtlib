@@ -48,7 +48,7 @@ async def save_api_counts(self):
         )
         new_api_call = set_default_rc_tag(new_api_call)
         # 暂时先不针对具体的组织统计接口调用信息，或者后续用storm来专门做统计
-        await api_call_col.insert(new_api_call)
+        await api_call_col.insert_one(new_api_call)
     else:
         await api_call_col.update({'api_name': api}, {'$inc': {'counts': 1}})
 
@@ -265,12 +265,12 @@ async def get_org_data_paginator(self, *args, **kwargs):
                 find_condition['tag'] = tag_condition
 
     msg_details = mycol.find(find_condition, hide_fields).sort([('rc_time', DESCENDING)])  # 升序排列
-    msg_details_cnt = await msg_details.count()
+    msg_details_cnt = await msg_details.count_documents()
     msg_details = msg_details.skip(page_size * (page_idx - 1)).limit(page_size)  # 进行分页
 
     total_page = math.ceil(msg_details_cnt / page_size)  # 总的页面数
     # dlog.debug('total page:%s' % total_page)
-    # dlog.debug('msg_details.count():%s' % msg_details_cnt)
+    # dlog.debug('msg_details.count_documents():%s' % msg_details_cnt)
 
     msg_content_list = await msg_details.to_list(page_size)
 
@@ -317,7 +317,7 @@ async def get_org_data(self, **kwargs):
             is_del=False
         )
     org_data = col.find(data).sort([('rc_time', DESCENDING)])
-    org_cnt = await org_data.count()
+    org_cnt = await org_data.count_documents()
     return await org_data.to_list(org_cnt)
 
 

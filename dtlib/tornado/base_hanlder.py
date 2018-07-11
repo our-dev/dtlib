@@ -395,7 +395,7 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         #
         # my_token = await cls.objects.get(id=my_token.get_id())  # 相当于使用了 loadReference功能
 
-        await token_col.insert(new_token)
+        await token_col.insert_one(new_token)
 
         return new_token
 
@@ -575,7 +575,7 @@ class MyAppBaseHandler(MyOriginBaseHandler):
         )
         new_session.update(self.set_http_tag())
         new_session = set_default_rc_tag(new_session)
-        await session_col.insert(new_session)
+        await session_col.insert_one(new_session)
         self.cache_session = new_session
         return new_session
 

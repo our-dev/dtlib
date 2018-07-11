@@ -111,7 +111,7 @@ def my_async_paginator_motor(method):
 
         my_paginator_data = await method(self, *args, **kwargs)
 
-        page_count = await my_paginator_data.count()
+        page_count = await my_paginator_data.count_documents()
         msg_details = my_paginator_data.skip(page_cap * (page_idx - 1)).limit(page_cap)  # 进行分页
 
         total_page = math.ceil(page_count / page_cap)  # 总的页面数
