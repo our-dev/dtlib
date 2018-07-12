@@ -265,12 +265,12 @@ async def get_org_data_paginator(self, *args, **kwargs):
                 find_condition['tag'] = tag_condition
 
     msg_details = mycol.find(find_condition, hide_fields).sort([('rc_time', DESCENDING)])  # 升序排列
-    msg_details_cnt = await msg_details.count_documents()
+    msg_details_cnt = await msg_details.count()
     msg_details = msg_details.skip(page_size * (page_idx - 1)).limit(page_size)  # 进行分页
 
     total_page = math.ceil(msg_details_cnt / page_size)  # 总的页面数
     # dlog.debug('total page:%s' % total_page)
-    # dlog.debug('msg_details.count_documents():%s' % msg_details_cnt)
+    # dlog.debug('msg_details.count():%s' % msg_details_cnt)
 
     msg_content_list = await msg_details.to_list(page_size)
 
@@ -317,7 +317,7 @@ async def get_org_data(self, **kwargs):
             is_del=False
         )
     org_data = col.find(data).sort([('rc_time', DESCENDING)])
-    org_cnt = await org_data.count_documents()
+    org_cnt = await org_data.count()
     return await org_data.to_list(org_cnt)
 
 
