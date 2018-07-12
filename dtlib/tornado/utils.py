@@ -50,7 +50,7 @@ async def save_api_counts(self):
         # 暂时先不针对具体的组织统计接口调用信息，或者后续用storm来专门做统计
         await api_call_col.insert_one(new_api_call)
     else:
-        await api_call_col.update({'api_name': api}, {'$inc': {'counts': 1}})
+        await api_call_col.update_one({'api_name': api}, {'$inc': {'counts': 1}})
 
 
 #

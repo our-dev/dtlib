@@ -555,7 +555,7 @@ class MyAppBaseHandler(MyOriginBaseHandler):
         if app_session is not None:
             # 如果已经存在,则只需要更新时间
             current_time = get_current_utc_time()
-            await session_col.update({'app_id': app_id},
+            await session_col.update_one({'app_id': app_id},
                                      {'$set': {'last_use_time': current_time}})
             # app_session.last_use_time = get_current_utc_time()  # 更新在线时间
             # app_session = await app_session.save()
