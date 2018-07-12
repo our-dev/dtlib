@@ -228,6 +228,11 @@ class MyOriginBaseHandler(RequestHandler):
 class MyUserBaseHandler(MyOriginBaseHandler):
     def __init__(self, *args, **kwargs):
         super(MyOriginBaseHandler, self).__init__(*args, **kwargs)
+        self.set_header('Access-Control-Allow-Headers',
+                        'Origin, X-Requested-With, Content-type, Accept, connection, User-Agent, Cookie')
+        self.set_header('Access-Control-Allow-Methods',
+                        'POST, GET, OPTIONS')
+        self.set_header("Access-Control-Allow-Origin", "*")
         self.cache_session = None  # App用于登录的session
         """:type:UserToken"""
 
