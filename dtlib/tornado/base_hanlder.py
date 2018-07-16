@@ -256,8 +256,11 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         mongo_conn = self.get_async_mongo()
         # todo: extract collection name
         token_col = mongo_conn['ttl_access_token']
+        session_col = mongo_conn['ttl_app_session']
 
         log_session = await token_col.find_one({'token': token, 'is_del': False})
+        if log_session is None:
+            log_session = await session_col.find_one({'token': token, 'is_del': False})
 
         # log_session = await AccessToken.objects.get(token=token)
         # """:type:AccessToken"""
@@ -290,7 +293,7 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         """
         # user_id = await self.get_user_id()
         # user = await User.objects.get(user_id=user_id)
-        user = self.cache_session['user']
+        # user = self.cache_session['user']
         #
         # if user is None:
         #     return None
@@ -299,7 +302,7 @@ class MyUserBaseHandler(MyOriginBaseHandler):
         rel_col = db.user_org_rel
         # todo: is_del?
         current_rels = await rel_col.find_one({
-            'user': ObjectId(user),
+            # 'user': ObjectId(user),
             'is_current': True,
             'is_active': True
         })
