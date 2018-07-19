@@ -41,6 +41,7 @@ def call_subprocess(cmd, stdin_data=None, stdin_async=True):
 
     raise Return((result, error))
 
+
 #
 # def get_std_json_response(**kwargs):
 #     """
@@ -69,7 +70,7 @@ def get_apps_url(base_dir):
             try:
                 full_path = os.path.join(directory, filename)
                 if os.path.isdir(full_path) and os.path.exists(os.path.join(full_path, 'urls.py')):
-                    url_package_name = os.path.join('apps', filename, 'urls').replace('/', '.')
+                    url_package_name = os.path.join('apps', filename, 'urls').replace(os.sep, '.')
                     package_url_list = getattr(__import__(url_package_name, fromlist=['url']), 'url')
                     assert package_url_list is not None  # 原则上是不允许为空的
                     apps_url += package_url_list
