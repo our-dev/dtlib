@@ -55,7 +55,7 @@ def get_parent_folder_name(file):
     :return:
     """
     full_path = os.path.realpath(file)
-    folder = full_path.split('/')[-2]
+    folder = full_path.split(os.sep)[-2]
     return folder
 
 
